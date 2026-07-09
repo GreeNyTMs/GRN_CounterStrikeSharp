@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <regex>
 #include <algorithm>
+#include <vector>
 
 #include "core/globals.h"
 
@@ -25,6 +26,53 @@ inline std::string GameDirectory()
 }
 
 // clang-format off
+inline std::string NormalizeRelativePath(const std::string& path)
+{
+    std::string processedPath = path;
+
+    processedPath.erase(processedPath.begin(), std::find_if(processedPath.begin(), processedPath.end(), [](unsigned char ch) {
+        return !std::isspace(ch);
+    }));
+
+    processedPath.erase(std::find_if(processedPath.rbegin(), processedPath.rend(), [](unsigned char ch) {
+        return !std::isspace(ch);
+    }).base(), processedPath.end());
+
+    processedPath = std::regex_replace(processedPath, std::regex(R"([\\/]+)"), "/");
+
+    if (!processedPath.empty())
+    {
+        if (processedPath[0] != '/')
+        {
+            processedPath = "/" + processedPath;
+        }
+        if (processedPath.back() == '/' && processedPath.length() > 1)
+        {
+            processedPath.pop_back();
+        }
+    }
+
+    return processedPath;
+}
+
+inline bool TrySetRelativeDirectory(const std::string& path, std::string& storedPath, bool& isInitialized)
+{
+    if (path.empty())
+    {
+        return false;
+    }
+
+    const std::string fullPath = GameDirectory() + path;
+    if (std::filesystem::exists(fullPath) && std::filesystem::is_directory(fullPath))
+    {
+        storedPath = path;
+        isInitialized = true;
+        return true;
+    }
+
+    return false;
+}
+
 inline std::string RelativeDirectory(const std::string& initPath = "")
 {
     static std::string storedPath;
@@ -32,39 +80,43 @@ inline std::string RelativeDirectory(const std::string& initPath = "")
 
     if (!initPath.empty() && !isInitialized)
     {
-        std::string processedPath = initPath;
+        const std::string processedPath = NormalizeRelativePath(initPath);
 
-        processedPath.erase(processedPath.begin(), std::find_if(processedPath.begin(), processedPath.end(), [](unsigned char ch) {
-            return !std::isspace(ch);
-        }));
+        std::vector<std::string> candidatePaths;
+        candidatePaths.push_back(processedPath);
 
-        processedPath.erase(std::find_if(processedPath.rbegin(), processedPath.rend(), [](unsigned char ch) {
-            return !std::isspace(ch);
-        }).base(), processedPath.end());
-
-        processedPath = std::regex_replace(processedPath, std::regex(R"([\\/]+)"), "/");
-
-        if (!processedPath.empty())
+        // After some CS2 updates IVEngineServer::GetGameDir() can resolve to the
+        // server root "game" directory instead of the mod directory "game/csgo".
+        // In that case the historical default "/addons/counterstrikesharp" must
+        // be resolved as "/csgo/addons/counterstrikesharp".
+        if (processedPath.rfind("/csgo/", 0) != 0)
         {
-            if (processedPath[0] != '/')
+            candidatePaths.push_back("/csgo" + processedPath);
+        }
+
+        for (const std::string& candidatePath : candidatePaths)
+        {
+            if (TrySetRelativeDirectory(candidatePath, storedPath, isInitialized))
             {
-                processedPath = "/" + processedPath;
-            }
-            if (processedPath.back() == '/' && processedPath.length() > 1)
-            {
-                processedPath.pop_back();
+                return storedPath;
             }
         }
 
-        std::string fullPath = GameDirectory() + processedPath;
-        if (std::filesystem::exists(fullPath) && std::filesystem::is_directory(fullPath))
+        return "NotFound";
+    }
+
+    if (!isInitialized)
+    {
+        std::vector<std::string> candidatePaths;
+        candidatePaths.push_back("/addons/counterstrikesharp");
+        candidatePaths.push_back("/csgo/addons/counterstrikesharp");
+
+        for (const std::string& candidatePath : candidatePaths)
         {
-            storedPath = processedPath;
-            isInitialized = true;
-        }
-        else
-        {
-            return "NotFound";
+            if (TrySetRelativeDirectory(candidatePath, storedPath, isInitialized))
+            {
+                return storedPath;
+            }
         }
     }
 
