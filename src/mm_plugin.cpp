@@ -15,6 +15,7 @@
 #include "mm_plugin.h"
 
 #include <cstdio>
+#include <string>
 
 #include "core/detours.h"
 #include "core/coreconfig.h"
@@ -119,24 +120,13 @@ bool CounterStrikeSharpMMPlugin::Load(PluginId id, ISmmAPI* ismm, char* error, s
     g_pSource2GameEntities = globals::gameEntities;
     interfaces::pGameResourceServiceServer = (CGameResourceService*)g_pGameResourceServiceServer;
 
-// clang-format off
-const char* requestedBasePath = CommandLine()->ParmValue(MakeStringToken("+css_basepath"), "/addons/counterstrikesharp");
-std::string resolvedBasePath = requestedBasePath;
+    const char* basePath = CommandLine()->ParmValue(MakeStringToken("+css_basepath"), "/addons/counterstrikesharp");
 
-if (utils::RelativeDirectory(resolvedBasePath) == "NotFound")
-{
-    if (resolvedBasePath == "/addons/counterstrikesharp")
+    if (utils::RelativeDirectory(std::string(basePath)) == "NotFound")
     {
-        resolvedBasePath = "/csgo/addons/counterstrikesharp";
-    }
-
-    if (utils::RelativeDirectory(resolvedBasePath) == "NotFound")
-    {
-        CSSHARP_CORE_ERROR("Invalid base path: {} (also tried /csgo/addons/counterstrikesharp)", requestedBasePath);
+        CSSHARP_CORE_ERROR("Invalid base path: {}", basePath);
         return false;
     }
-}
-// clang-format on
     CSSHARP_CORE_INFO("Current root directory: {}", utils::GetRootDirectory());
 
     auto coreconfig_path = std::string(utils::ConfigsDirectory() + "/core");
