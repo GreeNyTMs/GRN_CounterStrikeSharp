@@ -119,9 +119,8 @@ bool CounterStrikeSharpMMPlugin::Load(PluginId id, ISmmAPI* ismm, char* error, s
     g_pSource2GameEntities = globals::gameEntities;
     interfaces::pGameResourceServiceServer = (CGameResourceService*)g_pGameResourceServiceServer;
 
-const char* requestedBasePath =
-    CommandLine()->ParmValue(MakeStringToken("+css_basepath"), "/addons/counterstrikesharp");
-
+// clang-format off
+const char* requestedBasePath = CommandLine()->ParmValue(MakeStringToken("+css_basepath"), "/addons/counterstrikesharp");
 std::string resolvedBasePath = requestedBasePath;
 
 if (utils::RelativeDirectory(resolvedBasePath) == "NotFound")
@@ -137,6 +136,7 @@ if (utils::RelativeDirectory(resolvedBasePath) == "NotFound")
         return false;
     }
 }
+// clang-format on
     CSSHARP_CORE_INFO("Current root directory: {}", utils::GetRootDirectory());
 
     auto coreconfig_path = std::string(utils::ConfigsDirectory() + "/core");
