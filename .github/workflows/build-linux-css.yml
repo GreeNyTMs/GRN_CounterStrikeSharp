@@ -41,14 +41,34 @@ jobs:
           test -n "$SO"
           echo "Found binary: $SO"
 
-          echo "Checking GLIBC_2.38 dependency..."
+          echo "==== ldd ===="
+          ldd "$SO" || true
+
+          echo "==== ldd -r ===="
+          ldd -r "$SO" || true
+
+          echo "==== GLIBC check ===="
           if objdump -T "$SO" | grep -q "GLIBC_2.38"; then
             echo "ERROR: Binary depends on GLIBC_2.38"
             exit 1
           fi
 
-          echo "Checking exported StringToken symbols..."
-          nm -D "$SO" | c++filt | grep -E "g_bUpdateStringTokenDatabase|g_pUpdateStringTokenDatabase|RegisterStringToken" || true
+          echo "==== StringToken symbols ===="
+          nm -D "$SO" | c++filt | grep -E "g_bUpdateStringTokenDatabase|g_pUpdateStringTokenDatabase|RegisterStringToken"
+
+          echo "==== Unresolved C++ symbols check ===="
+          nm -D -u "$SO" | c++filt | tee unresolved_symbols.txt || true
+
+          echo "==== Checking forbidden unresolved symbols ===="
+          if grep -E "spdlog|fmt::|fmt_|GLIBC_2\.38|GLIBCXX_3\.4\.3[0-9]|CXXABI_1\.3\.1[4-9]" unresolved_symbols.txt; then
+            echo "ERROR: Binary has forbidden unresolved symbols."
+            exit 1
+          fi
+
+          echo "==== Checking unresolved symbol count ===="
+          cat unresolved_symbols.txt
+
+          echo "Verify completed."
 
       - name: Package
         run: |

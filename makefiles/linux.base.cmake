@@ -22,7 +22,7 @@ set(
     ${SOURCESDK_LIB}/linux64/tier1.a
     ${SOURCESDK_LIB}/linux64/interfaces.a
     ${SOURCESDK_LIB}/linux64/mathlib.a
-    spdlog
+    spdlog::spdlog_header_only
     dynload_s
     dyncall_s
     distorm
