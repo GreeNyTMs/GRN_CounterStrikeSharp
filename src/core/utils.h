@@ -87,7 +87,7 @@ inline std::string RelativeDirectory(const std::string& initPath = "")
 
         // After some CS2 updates IVEngineServer::GetGameDir() can resolve to the
         // server root "game" directory instead of the mod directory "game/csgo".
-        // In that case the historical default "/addons/counterstrikesharp" must
+        // In that case the historical default "/csgo/addons/counterstrikesharp" must
         // be resolved as "/csgo/addons/counterstrikesharp".
         if (processedPath.rfind("/csgo/", 0) != 0)
         {
@@ -108,7 +108,7 @@ inline std::string RelativeDirectory(const std::string& initPath = "")
     if (!isInitialized)
     {
         std::vector<std::string> candidatePaths;
-        candidatePaths.push_back("/addons/counterstrikesharp");
+        candidatePaths.push_back("/csgo/addons/counterstrikesharp");
         candidatePaths.push_back("/csgo/addons/counterstrikesharp");
 
         for (const std::string& candidatePath : candidatePaths)
@@ -120,7 +120,7 @@ inline std::string RelativeDirectory(const std::string& initPath = "")
         }
     }
 
-    return isInitialized ? storedPath : "/addons/counterstrikesharp";
+    return isInitialized ? storedPath : "/csgo/addons/counterstrikesharp";
 }
 // clang-format on
 

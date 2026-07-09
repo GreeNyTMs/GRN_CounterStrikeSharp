@@ -120,7 +120,7 @@ bool CounterStrikeSharpMMPlugin::Load(PluginId id, ISmmAPI* ismm, char* error, s
     g_pSource2GameEntities = globals::gameEntities;
     interfaces::pGameResourceServiceServer = (CGameResourceService*)g_pGameResourceServiceServer;
 
-    const char* basePath = CommandLine()->ParmValue(MakeStringToken("+css_basepath"), "/addons/counterstrikesharp");
+    const char* basePath = CommandLine()->ParmValue(MakeStringToken("+css_basepath"), "/csgo/addons/counterstrikesharp");
 
     if (utils::RelativeDirectory(std::string(basePath)) == "NotFound")
     {
