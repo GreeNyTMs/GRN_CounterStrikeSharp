@@ -1,0 +1,67 @@
+name: Build CounterStrikeSharp Linux patched
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    container:
+      image: registry.gitlab.steamos.cloud/steamrt/sniper/sdk:latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install build tools
+        run: |
+          apt-get update
+          apt-get install -y cmake ninja-build clang-16 lld-16 git python3 zip binutils
+          ln -sf /usr/bin/clang-16 /usr/local/bin/clang || true
+          ln -sf /usr/bin/clang++-16 /usr/local/bin/clang++ || true
+
+      - name: Configure
+        run: |
+          rm -rf build
+          mkdir build
+          cd build
+          CC=clang CXX=clang++ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
+
+      - name: Build
+        run: |
+          cd build
+          cmake --build . --config Release -j$(nproc)
+
+      - name: Verify binary
+        run: |
+          set -e
+          SO="$(find build -name counterstrikesharp.so | head -1)"
+          test -n "$SO"
+          echo "Found binary: $SO"
+
+          echo "Checking GLIBC_2.38 dependency..."
+          if objdump -T "$SO" | grep -q "GLIBC_2.38"; then
+            echo "ERROR: Binary depends on GLIBC_2.38"
+            exit 1
+          fi
+
+          echo "Checking exported StringToken symbols..."
+          nm -D "$SO" | c++filt | grep -E "g_bUpdateStringTokenDatabase|g_pUpdateStringTokenDatabase|RegisterStringToken" || true
+
+      - name: Package
+        run: |
+          set -e
+          SO="$(find build -name counterstrikesharp.so | head -1)"
+          mkdir -p release/addons/counterstrikesharp/bin/linuxsteamrt64
+          cp "$SO" release/addons/counterstrikesharp/bin/linuxsteamrt64/counterstrikesharp.so
+          chmod +x release/addons/counterstrikesharp/bin/linuxsteamrt64/counterstrikesharp.so
+          cd release
+          zip -r ../counterstrikesharp-linux-stringtoken-fix.zip addons
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: counterstrikesharp-linux-stringtoken-fix
+          path: counterstrikesharp-linux-stringtoken-fix.zip
