@@ -118,6 +118,9 @@ set(SOURCE_FILES
 )
 
 add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES} ${NATIVES_SOURCES} ${CONVERSIONS_SOURCES} ${CONVERSIONS_HEADERS})
+if(LINUX)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE SPDLOG_HEADER_ONLY FMT_HEADER_ONLY)
+endif()
 
 target_include_directories(
     ${PROJECT_NAME}
