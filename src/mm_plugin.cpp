@@ -102,7 +102,6 @@ bool CounterStrikeSharpMMPlugin::Load(PluginId id, ISmmAPI* ismm, char* error, s
     Log::Init();
 
     CSSHARP_CORE_INFO("Initializing with command line: {}", CommandLine()->GetCmdLine());
-    const char* basePath = CommandLine()->ParmValue(MakeStringToken("+css_basepath"), "/addons/counterstrikesharp");
 
     GET_V_IFACE_CURRENT(GetEngineFactory, globals::engineServer2, IVEngineServer2, SOURCE2ENGINETOSERVER_INTERFACE_VERSION);
     GET_V_IFACE_CURRENT(GetEngineFactory, globals::engine, IVEngineServer, INTERFACEVERSION_VENGINESERVER);
@@ -120,11 +119,24 @@ bool CounterStrikeSharpMMPlugin::Load(PluginId id, ISmmAPI* ismm, char* error, s
     g_pSource2GameEntities = globals::gameEntities;
     interfaces::pGameResourceServiceServer = (CGameResourceService*)g_pGameResourceServiceServer;
 
-    if (utils::RelativeDirectory(std::string(basePath)) == "NotFound")
+const char* requestedBasePath =
+    CommandLine()->ParmValue(MakeStringToken("+css_basepath"), "/addons/counterstrikesharp");
+
+std::string resolvedBasePath = requestedBasePath;
+
+if (utils::RelativeDirectory(resolvedBasePath) == "NotFound")
+{
+    if (resolvedBasePath == "/addons/counterstrikesharp")
     {
-        CSSHARP_CORE_ERROR("Invalid base path: {}", basePath);
+        resolvedBasePath = "/csgo/addons/counterstrikesharp";
+    }
+
+    if (utils::RelativeDirectory(resolvedBasePath) == "NotFound")
+    {
+        CSSHARP_CORE_ERROR("Invalid base path: {} (also tried /csgo/addons/counterstrikesharp)", requestedBasePath);
         return false;
     }
+}
     CSSHARP_CORE_INFO("Current root directory: {}", utils::GetRootDirectory());
 
     auto coreconfig_path = std::string(utils::ConfigsDirectory() + "/core");
